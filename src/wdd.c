@@ -32,7 +32,7 @@
 #ifdef _MSC_VER
     #define strdup _strdup
     #define strtoll _strtoi64
-    #define strtok_r strtok_s
+    #define ostrtok_r strtok_s
 #endif
 
 struct program_options {
@@ -41,6 +41,7 @@ struct program_options {
     size_t block_size;
     size_t count;
     const char *status;
+    const char *convert;
 };
 
 struct program_state {
@@ -232,6 +233,22 @@ static BOOL is_empty_string(const char *s) {
     return s == NULL || *s == '\0';
 }
 
+static char *ostrtok_r(char *str, const char *delim, char **saveptr) {
+    if (str) *saveptr = str;
+    if (!*saveptr) return NULL;
+    char *token;
+    for(token=str;*token!=0;token++)
+    {
+    	if (*token==*delim)
+    	{
+    		*token = 0;
+    		*saveptr = token + 1;
+		}
+	}
+	token = str;
+    return token;
+}
+
 static BOOL parse_options(int argc,
                           char **argv,
                           struct program_options *options) {
@@ -242,10 +259,11 @@ static BOOL parse_options(int argc,
     options->block_size = 0;
     options->count = -1;
     options->status = NULL;
+	options->convert = NULL;
 
     for (i = 1; i < argc; i++) {
         char *value = NULL;
-        char *name = strtok_r(argv[i], "=", &value);
+        char *name = ostrtok_r(argv[i], "=", &value);
 
         if (strcmp(name, "if") == 0) {
             options->filename_in = strdup(value);
@@ -257,6 +275,8 @@ static BOOL parse_options(int argc,
             options->count = (size_t)strtoll(value, NULL, 10);
         } else if (strcmp(name, "status") == 0) {
             options->status = strdup(value);
+        } else if (strcmp(name, "conv") == 0) {
+            options->convert = strdup(value);
         } else {
             return FALSE;
         }
